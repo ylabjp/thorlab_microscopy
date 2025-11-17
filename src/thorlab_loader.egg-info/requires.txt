@@ -1,0 +1,7 @@
+numpy
+tifffile
+lxml
+imagecodecs
+
+[dev]
+pytest
