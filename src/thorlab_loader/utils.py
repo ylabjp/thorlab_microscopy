@@ -1,6 +1,7 @@
 # src/thorlab_loader/utils.py
 
 import os
+from pathlib import Path
 
 
 def ensure_exists(path):
@@ -13,3 +14,13 @@ def ensure_list(x):
         return list(x)
     return [x]
 
+def find_tiff_files(folder: str):
+    """
+    Find all .tif / .tiff files in a directory and return them sorted.
+    """
+    folder = Path(folder)
+    ensure_exists(folder)
+    files = sorted(
+        list(folder.glob("*.tif")) + list(folder.glob("*.tiff"))
+    )
+    return [str(f) for f in files]

@@ -1,4 +1,4 @@
-# 🧪 Thorlab Microscopy Loader  
+# Thorlab Microscopy Loader  
 
 **Convert raw Thorlab TIFF files + Experiment.xml into OME-TIFF (Fiji-compatible)**
 
@@ -6,95 +6,88 @@ This package loads Thorlab microscopy outputs — multiple TIFF image planes plu
 
 ---
 
-## ✅ Features
+## Features
 
-- Load multi-plane TIFFs (Z-stack, multi-channel, multi-file acquisitions)  
-- Parse `Experiment.xml` for physical units and channel info  
-- Assemble images + metadata → OME-TIFF  
-- Optional compression (LZMA)  
-- Fully modular `src` layout  
-- Compatible with Python 3.10+  
+- Automatically load multi-page TIFF stacks from a folder
+
+- Parse Thorlabs Experiment.xml metadata
+
+- Combine Z-slices, channels, and time points into a single OME-TIFF
+
+- Save OME-TIFF compatible with Fiji/ImageJ
+
+- CLI with runtime arguments for input/output paths, verbosity, debug, dry-run, and overwrite
+
+- Colored logging for easy reading
+
+- Automatic detection of missing or misnamed files
 
 ---
 
-## 📦 Project Structure
+## Installation
 
-
----
-
-## 🔧 Installation
-
-### 1. Clone the repository
+### Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/thorlab_microscopy.git
+git clone https://github.com/<YOUR_USERNAME/thorlab_microscopy.git
 cd thorlab_microscopy
+```
+### Setup virtual environment using uv
 
-##Create environment + install locally
-uv venv
-source .venv/bin/activate
+```bash
+uv sync
+```
+### Install package and dependencies in editable mode
+
+```bash
 uv pip install -e .
+```
+--- 
 
-Usage Example
+## Usage Example
 
-Convert a Thorlab acquisition into a Fiji-readable OME-TIFF:
+### Run by the command line
 
-from thorlab_loader.builder import ThorlabBuilder
+```bash
+uv run python run_process_experiment.py --input /path/to/experiment_folder \
+                     --xml /path/to/Experiment.xml \
+                     --output output.tif \
+                     --verbose
+```
 
-builder = ThorlabBuilder(
-    tiff_paths=[
-        "ChanA_001_001_001_001.tif"
-    ],
-    xml_path="Experiment.xml"
-)
+For more option type 
 
-builder.save("output.tif", compress=False)
+```bash 
+uv run python run_process_experiment.py --help
+```
+---
+
+## Notes
+
+- Make sure only experiment-related TIFFs are in the input folder.
+
+- Files are sorted alphabetically; sequential numbers (001, 002, …) are required for proper merging.
+
+- If XML metadata exists, ThorlabBuilder can automatically assign channels and Z-slices.
+
+- The CLI supports colored logs and a simple spinner while loading TIFFs.
+
+---
+
+## Contributing
+
+- We welcome contributions! Please follow these rules:
+
+- Fork the repository and create a branch for your feature/fix.
+
+- Make your changes and test locally.
+
+- Avoid committing .pyc or temporary files.
+
+- Open a Pull Request (PR) with a clear description of your changes.
+
+---
 
 
-Saved as OME-TIFF
-
-Shape: TCZYX (Time × Channel × Z × Y × X)
-
-Fiji automatically detects channels, slices, and Z-spacing
-
-📄 Required Files
-Experiment.xml
-ChanA_001_001_001_001.tif
-ChanA_001_001_002_001.tif
-...
-
-🧠 Workflow
-
-Parse metadata (xml_parser.py) → pixel size, Z-step, channel names
-
-Load TIFFs (tiff_reader.py) → handle 2D or 3D TIFFs, multi-file stacking
-
-Assemble + build (builder.py) → align data with metadata
-
-Write OME-TIFF (tiff_writer.py) → TCZYX layout, Fiji-compatible
-
-🧪 Fiji Compatibility
-
-Opens as a hyperstack
-
-Shows correct channels, slices, timepoints
-
-Pixel size and Z-spacing automatically applied
-
-🔬 Future Extensions
-
-Napari viewer integration
-
-Multi-position acquisitions
-
-Multi-channel datasets
-
-Mosaic stitching / illumination correction
-
-🤝 Contributing
-
-Pull requests welcome
-
-Use ruff and black for formatting
 
 
