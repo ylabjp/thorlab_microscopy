@@ -8,7 +8,11 @@ dependencies = [
     "numpy",
     "tifffile",
     "lxml",
+    "pandas",
+    "matplotlib",
+    "requests",
     "imagecodecs",
+    "gdown>=5.0.0",
 ]
 
 [build-system]

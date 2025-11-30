@@ -28,6 +28,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+src/thorlab_loader.egg-info/
 
 # ------------------------------
 # pytest / test cache
@@ -69,10 +70,9 @@ logs/
 # ------------------------------
 # Input/Output Data
 # ------------------------------
-# (Optional) Ignore large TIFF files in your repo
-# Uncomment this if you want to avoid committing massive Thorlab TIFFs
-# *.tif
-# *.tiff
+#Ignore large TIFF files in your repo
+*.tif
+*.tiff
 
 # ------------------------------
 # Project specific ignores

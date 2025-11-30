@@ -1,50 +1,36 @@
+# src/thorlab_loader/tiff_writer.py
 import tifffile
+from pathlib import Path
+import numpy as np
+from .utils import ensure_parent, log_info
 
-def save_ome_tiff(output_path, arr, meta, compress=False):
+def save_ome_tiff(stack_z_y_x: np.ndarray, out_path: str, axes: str = "TCZYX"):
+    """
+    stack_z_y_x: (Z, Y, X) -> will be saved as (T=1,C=1,Z,Y,X) with axes 'TCZYX'
+    """
+    ensure_parent(out_path)
+    arr = stack_z_y_x[np.newaxis, np.newaxis, :, :, :]  # (1,1,Z,Y,X)
+    # tifffile will build minimal OME-XML if ome=True
+    tifffile.imwrite(str(out_path), arr, ome=True, metadata={"axes": "TCZYX"})
+    log_info(f"[OK] Saved OME-TIFF → {out_path}")
+    return out_path
 
-    # --- Promote input to 5D (T,C,Z,Y,X) ---
-    if arr.ndim == 3:          # (Z, Y, X)
-        arr5 = arr[None, None]  # (1,1,Z,Y,X)
-    elif arr.ndim == 4:        # (C, Z, Y, X)
-        arr5 = arr[None]        # (1,C,Z,Y,X)
-    elif arr.ndim == 5:
-        arr5 = arr
-    else:
-        raise ValueError(f"Unsupported shape {arr.shape}")
 
-    T, C, Z, Y, X = arr5.shape
+def save_plain_tiff(stack_z_y_x: np.ndarray, out_path: str):
+    """
+    Save plain multi-page TIFF where each page is a Z slice.
+    """
+    ensure_parent(out_path)
+    tifffile.imwrite(str(out_path), stack_z_y_x, photometric="minisblack")
+    log_info(f"[OK] Saved plain TIFF → {out_path}")
+    return out_path
+    
 
-    # --- Ensure channel names exist ---
-    channel_names = meta.channel_names or []
-    if len(channel_names) < C:
-        channel_names = [f"Channel_{i+1}" for i in range(C)]
 
-    # --- Construct metadata ---
-    ome_meta = {
-        "axes": "TCZYX",
-        "SizeT": T,
-        "SizeC": C,
-        "SizeZ": Z,
-        "SizeY": Y,
-        "SizeX": X,
-        "PhysicalSizeX": meta.physical_size_x,
-        "PhysicalSizeY": meta.physical_size_y,
-        "PhysicalSizeZ": meta.physical_size_z,
-        "PhysicalSizeXUnit": "µm",
-        "PhysicalSizeYUnit": "µm",
-        "PhysicalSizeZUnit": "µm",
-        "Channel": [{"Name": ch} for ch in channel_names],
-    }
 
-    # --- Write ---
-    tifffile.imwrite(
-        output_path,
-        arr5,
-        metadata=ome_meta,
-        ome=True,
-        compression="lzma" if compress else None,
-    )
 
-    print(f"[OK] Saved OME-TIFF → {output_path}")
-    print(f"     Shape={arr5.shape}, axes=TCZYX")
+
+
+
+#print(f"     Shape={arr5.shape}, axes=TCZYX")
 
