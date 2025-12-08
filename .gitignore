@@ -80,4 +80,10 @@ logs/
 # Temporary test images, scratch files, examples
 tmp/
 scratch/
-
+# Google Drive API credentials  
+credentials/
+*.json
+*.pickle
+token.pickle
+credential/
+drive_work/

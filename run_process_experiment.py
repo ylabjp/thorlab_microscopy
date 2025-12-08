@@ -1,142 +1,145 @@
 #!/usr/bin/env python3
+"""
+run_process_experiment.py
+"""
+
 import argparse
 import logging
-import threading
-import time
-import sys
 from pathlib import Path
+import sys
+
 from thorlab_loader.builder import ThorlabBuilder
-from thorlab_loader.utils import log_info, log_done, log_warn, log_error
+from thorlab_loader.download_drive_folder import download_and_extract_drive_folder
 
-# -----------------------------
-# Colored Logging Helpers
-# -----------------------------
-def setup_logging(args):
-    level = logging.WARNING
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(message)s"
-    )
-
-
-def log_info(msg):
-    logging.info(f"\033[94m[INFO]\033[0m {msg}")
-
-
-def log_done(msg):
-    logging.info(f"\033[92m[DONE]\033[0m {msg}")
-
-
-def log_warn(msg):
-    logging.warning(f"\033[93m[WARN]\033[0m {msg}")
-
-
-def log_error(msg):
-    logging.error(f"\033[91m[ERROR]\033[0m {msg}")
-
-# -----------------------------
-# Spinner for running indication
-# -----------------------------
-class Spinner:
-    def __init__(self, message="Running"):
-        self.message = message
-        self.spinner = ['|', '/', '-', '\\']
-        self.running = False
-        self.thread = None
-
-    def start(self):
-        self.running = True
-        self.thread = threading.Thread(target=self._spin)
-        self.thread.start()
-
-    def _spin(self):
-        idx = 0
-        while self.running:
-            sys.stdout.write(f"\r{self.message}... {self.spinner[idx % len(self.spinner)]}")
-            sys.stdout.flush()
-            time.sleep(0.1)
-            idx += 1
-        sys.stdout.write("\r" + " " * (len(self.message) + 5) + "\r")  # clear line
-
-    def stop(self):
-        self.running = False
-        if self.thread:
-            self.thread.join()
-
-
-
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("thorlab_pipeline")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Process Thorlabs TIFF folder (Experiment.xml required)")
+    p = argparse.ArgumentParser(description="Thorlab: local or Google Drive TIFF/XML processing")
 
-    parser.add_argument(
-        "--tiff_dir", "-i", 
-        required=True, 
-        help="Folder containing TIFF files"
-    )
-    parser.add_argument(
-        "--xml", "-x", 
-        required=True, 
-        help="Experiment.xml path (required)"
-    )
-    parser.add_argument(
-        "--output_dir", "-o", 
-        required=True, 
-        help="Output directory for generated TIFFs"
-    )
-    parser.add_argument(
-        "--save_raw", 
-        action="store_true", 
-        help="Also save plain multi-page TIFF alongside OME"
-    )
-    parser.add_argument(
-        "--verbose", "-v", 
-        action="store_true", 
-        help="Verbose logs"
-    )
-    parser.add_argument(
-        "-d", "--debug",
-        action="store_true",
-        help="Enable debug logging."
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Load data + metadata but DO NOT save output file."
-    )
-    return parser.parse_args()
+    # Local mode
+    p.add_argument("--tiff_dir", type=str)
+    p.add_argument("--xml", type=str)
 
-def main():
-    print("\033[94m" + "#" * 100 + "\033[0m")
-    args = parse_args()
-    #logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(asctime)s - %(message)s")
-    setup_logging(args)
-    spinner = Spinner("Loading TIFFs")
-    spinner.start()
-    tiff_dir = Path(args.tiff_dir).expanduser().resolve()
-    xml_path = Path(args.xml).expanduser().resolve()
-    out_dir = Path(args.output_dir).expanduser().resolve()
-    spinner.stop()
+    # Drive mode
+    p.add_argument("--drive_folder", type=str)
+    p.add_argument("--auth_mode", choices=["service_account", "oauth"], default="service_account")
+    p.add_argument("--service_account", type=str, help="Path to service_account.json")
+    p.add_argument("--client_secret", type=str, help="Path to client_secret.json")
 
-    tiff_files = sorted([p for p in tiff_dir.glob("Chan*.tif")])
-    print(f"[INFO] Loaded {len(tiff_files)} Chan*.tif files")
+    # Directories
+    p.add_argument("--work_dir", type=str, default="./drive_work")
+    p.add_argument("--output_dir", type=str, default="./output")
+
+    p.add_argument("--save_raw", action="store_true")
+    p.add_argument("--verbose", action="store_true")
+
+    return p.parse_args()
+
+
+# ----------------------------------------------
+# LOCAL MODE
+# ----------------------------------------------
+
+def process_local_mode(tiff_dir: Path, xml_path: Path, output_dir: Path, save_raw: bool):
+    logger.info(f"Processing local dataset: {tiff_dir}")
 
     builder = ThorlabBuilder(str(tiff_dir), str(xml_path))
-    saved = builder.run_and_save(str(out_dir), save_raw=args.save_raw)
-    if args.dry_run:
-        log_info("Dry-run requested → skipping save.")
-        print("Metadata summary:")
-        print(metadata)
-        return
+    saved = builder.run_and_save(str(output_dir), save_raw=save_raw)
 
-    log_done(f"Saved {len(saved)} files to {out_dir}")
-    print("\033[94m" + "#" * 100 + "\033[0m")
+    logger.info(f"Local processing complete — saved {len(saved)} files → {output_dir}")
+
+
+# ----------------------------------------------
+# DRIVE MODE
+# ----------------------------------------------
+
+def process_drive_mode(folder_url: str, auth_mode: str, work_dir: Path,
+                       service_account_path: str, client_secret_path: str,
+                       output_root: Path, save_raw: bool):
+
+    logger.info(f"Drive mode: downloading from: {folder_url}")
+
+    extracted_root = download_and_extract_drive_folder(
+        folder_url=folder_url,
+        work_dir=work_dir,
+        auth_mode=auth_mode,
+        service_account_json=service_account_path,
+        client_secret_json=client_secret_path,
+    )
+
+    logger.info(f"Extracted root: {extracted_root}")
+
+    # find individual datasets
+    datasets = [d for d in extracted_root.iterdir() if d.is_dir()]
+
+    if not datasets:
+        raise FileNotFoundError("No extracted datasets found.")
+
+    for dataset in datasets:
+        xml_path = next(dataset.rglob("Experiment.xml"), None)
+        if xml_path is None:
+            logger.warning(f"No XML inside {dataset}, skipping.")
+            continue
+
+        dataset_output = output_root.parent / f"output_{dataset.name}"
+        dataset_output.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f"Processing {dataset.name} → {dataset_output}")
+
+        builder = ThorlabBuilder(str(dataset), str(xml_path))
+        saved = builder.run_and_save(str(dataset_output), save_raw=save_raw)
+
+        logger.info(f"{dataset.name}: saved {len(saved)} files.")
+
+
+# ----------------------------------------------
+# MAIN
+# ----------------------------------------------
+
+def main():
+    args = parse_args()
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+
+    output_root = Path(args.output_dir).resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    # Validation
+    if args.drive_folder and (args.tiff_dir or args.xml):
+        sys.exit("Use either local mode OR drive mode, not both.")
+
+    if args.tiff_dir and not args.xml:
+        sys.exit("--xml required when using --tiff_dir")
+
+    if not args.drive_folder and not args.tiff_dir:
+        sys.exit("Must use either --drive_folder OR --tiff_dir + --xml")
+
+    # LOCAL MODE
+    if args.tiff_dir:
+        return process_local_mode(
+            Path(args.tiff_dir).resolve(),
+            Path(args.xml).resolve(),
+            output_root,
+            args.save_raw,
+        )
+
+    # DRIVE MODE
+    work_dir = Path(args.work_dir).resolve()
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    return process_drive_mode(
+        folder_url=args.drive_folder,
+        auth_mode=args.auth_mode,
+        work_dir=work_dir,
+        service_account_path=args.service_account,
+        client_secret_path=args.client_secret,
+        output_root=output_root,
+        save_raw=args.save_raw,
+    )
+
 
 if __name__ == "__main__":
     main()
