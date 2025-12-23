@@ -153,7 +153,7 @@ Drive Folder/
  └── ...
 ```
 
-Each ZIP should contain:
+**Each ZIP should contain:**
 ```pgsql
 HA_488_XYT/
  ├── ChanA_001_001_001.tif
@@ -186,7 +186,7 @@ For each extracted dataset, it will create output directory like this:
 <diff_outdirpath>/output_HA_488_XYT/
 ```
 
-##Summary Files
+## Summary Files
 
 Each dataset produces:
 ```pgsql
@@ -198,43 +198,26 @@ output_HA_488_XYT/
 ---
 
 ## CLI Options (Core)
-Option	    Description
-
----
-
---tiff\_dir	      Local TIFF directory
-
----
-
---xml	            Experiment.xml (local mode)
-
----
-
---drive\_folder	  Google Drive folder URL
-
----
-
---auth\_mode	      service\_account or oauth
-
----
-
---work\_dir	      Temp download & extraction directory
-
----
-
---output\_dir	    Base output directory
-
----
-
---diff\_outdirpath	Override output base directory
-
----
-
---save\_raw	      Also save raw TIFFs
-
----
-
---verbose	        Debug logging
+|Option         |Description                            |
+|-------------- |---------------------------------------|
+|--tiff\_dir    | Local TIFF directory                  | 
+|---------------|--------------------------------------	|            
+|--xml          | Experiment.xml (local mode)           |
+|---------------|---------------------------------------|
+|--drive\_folder|	Google Drive folder URL               |
+|---------------|-------------------------------------- |
+|--auth\_mode	  | service\_account or oauth             |
+----------------|----------------------------------------|
+|--work\_dir	  | Temp download & extraction directory   |
+----------------|--------------------------------------- |
+|--output\_dir	| Base output directory                  |
+----------------|--------------------------------------- |
+|--diff\_outdirpath|	Override output base directory     |
+-------------------|------------------------------------ |
+|--save\_raw	 |     Also save raw TIFFs                 |
+---------------|---------------------------------------- |
+|--verbose	 |       Debug logging                       |
+-------------|------------------------------------------ |                
 
 Run:
 ```bash
