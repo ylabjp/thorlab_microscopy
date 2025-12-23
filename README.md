@@ -201,23 +201,14 @@ output_HA_488_XYT/
 |Option         |Description                            |
 |-------------- |---------------------------------------|
 |--tiff\_dir    | Local TIFF directory                  | 
-|---------------|--------------------------------------	|            
 |--xml          | Experiment.xml (local mode)           |
-|---------------|---------------------------------------|
 |--drive\_folder|	Google Drive folder URL               |
-|---------------|-------------------------------------- |
 |--auth\_mode	  | service\_account or oauth             |
-----------------|----------------------------------------|
 |--work\_dir	  | Temp download & extraction directory   |
-----------------|--------------------------------------- |
 |--output\_dir	| Base output directory                  |
-----------------|--------------------------------------- |
 |--diff\_outdirpath|	Override output base directory     |
--------------------|------------------------------------ |
 |--save\_raw	 |     Also save raw TIFFs                 |
----------------|---------------------------------------- |
 |--verbose	 |       Debug logging                       |
--------------|------------------------------------------ |                
 
 Run:
 ```bash
