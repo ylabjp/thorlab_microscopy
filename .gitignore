@@ -7,7 +7,9 @@ __pycache__/
 *.pyd
 *.sqlite3
 *.db
-
+*.swp
+*.swo
+*.swn
 # Byte-compiled / optimized / DLL files
 *.so
 *.dll
@@ -80,4 +82,10 @@ logs/
 # Temporary test images, scratch files, examples
 tmp/
 scratch/
-
+# Google Drive API credentials  
+credentials/
+*.json
+*.pickle
+token.pickle
+credential/
+drive_work/
