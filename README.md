@@ -132,17 +132,17 @@ Credentials and tokens **Must NOT be Committed**.
 Add credentials/ to .gitignore.
 
 
-**Testing: The test suite is organized into three levels.**
+### Testing: The test suite is organized into three levels.
 
 
-1. Unit tests (default)
+1. **Unit tests (default)**
 
 Fast tests using synthetic data.
 
 ```bash
 uv run pytest tests
 ```
-2. Local integration tests (real data)
+2. **Local integration tests (real data)**
 
 Runs the full pipeline on a real local dataset.
 
@@ -152,7 +152,7 @@ uv run pytest tests \
   --local-tiff-dir /User Tiff Path \
   --local-xml /User XML Path
 ````
-3. Google Drive integration tests
+3. **Google Drive integration tests**
 
 Downloads and processes real datasets from Google Drive using a service account.
 
