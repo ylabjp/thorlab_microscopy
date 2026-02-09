@@ -131,9 +131,9 @@ Use:
 Credentials and tokens **Must NOT be Committed**.
 Add credentials/ to .gitignore.
 
+---
 
-### Testing: The test suite is organized into three levels.
-
+## Testing: The test suite is organized into three levels.
 
 1. **Unit tests (default)**
 
@@ -163,6 +163,7 @@ uv run pytest tests \
   --gdrive-sa-json "/User Path/credentials/service_account.json"
 ```
 **These tests are opt-in and skipped unless credentials are provided.**
+---
 
 ### Expected Drive structure
 ```python
