@@ -61,7 +61,7 @@ The pipeline supports two exclusive modes:
 | Mode           | Description                                            |
 | -------------- | ------------------------------------------------------ |
 | **Local mode** | Process TIFF + XML already on disk                     |
-| **Drive mode** | Automatically download ZIPs from Google Drive, extract, then process |
+| **Drive mode** | Automatically download ZIPs from Google Drive, extract, then process for the test, runs under Pytest|
 
 ---
 
@@ -88,7 +88,7 @@ uv run python run_process_experiment.py \
 <diff_outdirpath>/output_<dataset_name>/
 ```
 ---
-## Google Drive Mode: ZIP-based datasets
+## Google Drive Mode: ZIP-based datasets for Pytest Only
 
 ### Google Drive Authentication: One-Time Setup 
 
@@ -131,19 +131,39 @@ Use:
 Credentials and tokens **Must NOT be Committed**.
 Add credentials/ to .gitignore.
 
+---
 
-**Now ready to run with the Google Drive URL**, assuming that each ZIP file in the Drive folder 
-containing \*.tiff files and treated as one dataset.
+## Testing: The test suite is organized into three levels.
+
+1. **Unit tests (default)**
+
+Fast tests using synthetic data.
 
 ```bash
-uv run python run_process_experiment.py \
-  --drive_folder "https://drive.google.com/drive/folders/XXXX" \
-  --auth_mode service_account \
-  --service_account credentials/service_account.json \
-  --work_dir ./drive_work \
-  --output_dir ./output \
-  --verbose
+uv run pytest tests
 ```
+2. **Local integration tests (real data)**
+
+Runs the full pipeline on a real local dataset.
+
+````bash
+uv run pytest tests \
+  -v -m integration \
+  --local-tiff-dir /User Tiff Path \
+  --local-xml /User XML Path
+````
+3. **Google Drive integration tests**
+
+Downloads and processes real datasets from Google Drive using a service account.
+
+```bash
+uv run pytest tests \
+  -v -m gdrive \
+  --gdrive-folder "https://drive.google.com/drive/folders/XXXX" \
+  --gdrive-sa-json "/User Path/credentials/service_account.json"
+```
+**These tests are opt-in and skipped unless credentials are provided.**
+---
 
 ### Expected Drive structure
 ```python
@@ -234,9 +254,6 @@ Each dataset writes a dataset\_summary.json including:
 
 - Status (success / failed)
 
-
-
-
 ## Notes
 
 - Make sure only experiment-related TIFFs are in the input folder.
@@ -259,9 +276,4 @@ Do not commit credentials
 - Avoid committing .pyc or temporary files.
 
 - Open a Pull Request (PR) with a clear description of your changes.
-
----
-
-
-
 
