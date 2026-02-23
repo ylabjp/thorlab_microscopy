@@ -1,12 +1,22 @@
 from pathlib import Path
+from typing import List, Tuple
 import os
-from typing import List
 import xarray as xr
+import numpy as np
+import xml.etree.ElementTree as ET
 from bioio_tifffile import Reader as TiffReader
 #from bioio.readers import Reader as TiffReader
 from bioio import BioImage
-from typing import List, Tuple
-import numpy as np
+
+# ---------------------------------------------------------
+# The Metadata-Aware Universal Stacker
+#To make this scientifically complete
+#Need to extract the physical coordinates from the xml 
+#Attach them to your 5D stack. 
+#Ensures that the final file in software like Fiji/ImageJ, 
+#"Z-step" or "Time Interval" is already set correctly.
+# ---------------------------------------------------------
+
 
 # ---------------------------------------------------------
 # Normalize ANY BioImage to TCZYX xarray
@@ -22,21 +32,11 @@ def normalize_to_tczyx(img: BioImage) -> xr.DataArray:
             data = data.expand_dims(d)
     
     data = data.transpose(*target_dims)
-    data = data.drop_vars(data.coords.keys())
+
+    #Keep scaling: If the input data already has coordinates like spatial scaling in microns
+    data = data.reset_coords(drop=True)
+    #data = data.drop_vars(data.coords.keys())
     return data
-# ---------------------------------------------------------
-# The Metadata-Aware Universal Stacker
-#To make this scientifically complete
-#Need to extract the physical coordinates from the xml 
-#Attach them to your 5D stack. 
-#Ensures that the final file in software like Fiji/ImageJ, 
-#"Z-step" or "Time Interval" is already set correctly.
-# ---------------------------------------------------------
-import os
-import xarray as xr
-import xml.etree.ElementTree as ET
-from pathlib import Path
-from bioio import BioImage
 
 def get_thorlabs_params(xml_path):
     tree = ET.parse(xml_path)
