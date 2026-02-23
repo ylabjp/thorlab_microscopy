@@ -14,6 +14,7 @@ from ..utils import hybrid
 from .bioio_reader import BioIOReader
 from .bioio_metadata import BioIOMetadataExtractor
 from .bioio_writer import BioIOWriter
+from thorlab_loader.utils import style_print
 
 #Stacker
 #from .bioio_ultra_stacker import stack_tiffs_ultra, to_tczyx
@@ -101,9 +102,9 @@ class ThorlabBioioBuilder:
         image_meta = extractor.extract()
         image_meta.dim_order = "TCZYX"
 
-        print(data.shape)
-        print(reader.get_dim_order())
-        print(image_meta.shape)
+        print(f"Data shape: {data.shape}")
+        print(f"Dimension order from reader: {reader.get_dim_order()}")
+        print(f"Shape from image meta: {image_meta.shape}")
 
         return data, image_meta, hybrid_channel_name 
 
@@ -113,7 +114,7 @@ class ThorlabBioioBuilder:
 
     def _validate(self, xml_meta, image_meta):
 
-        print("[Builder] Validating XML ↔ BioIO metadata...")
+        print("[Builder] Validating XML <-> BioIO metadata...")
 
         report = {"status": "PASS", "checks": []}
 
@@ -203,12 +204,13 @@ class ThorlabBioioBuilder:
                 xml_chan_count == image_meta.size_c, 
                 f"xml={xml_chan_count} img={image_meta.size_c}"), 
 
-        print("\n========== Validation Results ================")
+        style_print("\n========== Validation Results ================", "header")
+
         for check in report["checks"]:
             status = "PASS" if check["ok"] else "Some Parameters Not validated"
             print(f"[{status}] {check['name']}: {check['msg']}")
         print(f"Final Status: {report['status']}")
-        print("=============================================")
+        print("=============================================\n")
         return report
 
     # -------------------------------------------------
@@ -232,8 +234,6 @@ class ThorlabBioioBuilder:
             #physical_pixel_sizes=phys_sizes,
             physical_pixel_sizes=image_meta.pixel_size,
         )
-        #print(f"DEBUG WRITER: phys_sizes type: {type(phys_sizes)}")
-        #print(f"DEBUG WRITER: values: {phys_sizes}")
     # -------------------------------------------------
     # Validation report
     # -------------------------------------------------
@@ -262,7 +262,7 @@ class ThorlabBioioBuilder:
     # -------------------------------------------------
 
     def build(self):
-
+        print("=============================================================================")
         print("[Builder] Starting BioIO reconstruction pipeline")
 
         stacked_data, tiff_files = self._discover_and_stack()

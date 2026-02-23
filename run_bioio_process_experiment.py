@@ -98,12 +98,12 @@ def main() -> None:
 
     theme = get_theme()
 
-    print("\n========== Thorlab BioIO Processing ================")
+    style_print("\n========== Thorlab BioIO Processing ======================\n", "header")
     style_print(f"Started at: {theme['timestamp']}", "info")
-    print(f"TIFF directory  : {args.tiff_dir}")
-    print(f"XML file        : {args.xml}")
-    print(f"Output directory: {args.output_dir}")
-    print("==============================================\n")
+    style_print(f"TIFF directory  : {args.tiff_dir}", "info")
+    style_print(f"XML file        : {args.xml}", "info")
+    style_print(f"Output directory: {args.output_dir}", "info")
+    style_print("\n==========================================================", "header")
 
     builder = ThorlabBioioBuilder(
         tiff_dir=args.tiff_dir,
@@ -116,9 +116,10 @@ def main() -> None:
 
     builder.build()
 
-    style_print("\n[Builder] DONE. Processing completed successfully : success")
-    style_print("\nCheck Summary and validation Report.\n", "info")
-    print("==============================================")
+    print("=============================================================================")
+    style_print("[Builder] DONE. Processing completed successfully : success")
+    style_print("Check Summary and validation Report.\n", "info")
+    print("================================================================================")
 
 # =============================================================================
 

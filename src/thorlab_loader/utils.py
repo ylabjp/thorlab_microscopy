@@ -43,7 +43,10 @@ def get_theme():
         "success": "\033[92m",        # Green
         "error": "\033[91m\033[1m",   # Bold Red
         "reset": "\033[0m",
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "header1": "\033[38;5;48m\033[1m",  
+        "success1": "\033[38;5;48m",   # Emerald Green
+        "warning": "\033[93m",        # Yellow
     }
 
 def style_print(text, style_key="header"):
