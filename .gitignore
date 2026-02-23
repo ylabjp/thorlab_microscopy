@@ -82,7 +82,11 @@ logs/
 # Temporary test images, scratch files, examples
 tmp/
 scratch/
+Output/
+
+# ------------------------------
 # Google Drive API credentials  
+# ------------------------------
 credentials/
 *.json
 *.pickle
