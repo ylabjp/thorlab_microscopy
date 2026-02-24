@@ -38,12 +38,10 @@ packages = ["thorlab_loader"]
 [dependency-groups]
 dev = [
     "pytest>=9.0.1",
+    "pytest-mock"
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
-]
 zarr = [
   "bioio-ome-zarr",
   "ome-zarr",

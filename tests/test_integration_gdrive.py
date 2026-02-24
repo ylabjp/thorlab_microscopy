@@ -4,7 +4,6 @@ from pathlib import Path
 from thorlab_loader.builder import ThorlabBuilder
 
 
-@pytest.mark.integration
 @pytest.mark.gdrive
 def test_gdrive_pipeline(gdrive_dataset, tmp_path):
     dataset_dir = Path(gdrive_dataset)

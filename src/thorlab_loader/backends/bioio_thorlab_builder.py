@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from bioio_base.types import PhysicalPixelSizes
 
 # Existing project modules
@@ -243,6 +243,7 @@ class ThorlabBioioBuilder:
         report_path = output_path.with_suffix(".validation.json")
 
         payload = {
+            #"timestamp": datetime.datetime.now(datetime.UTC),
             "timestamp": datetime.utcnow().isoformat(),
             "source_tiff_dir": str(self.tiff_dir),
             "Channel_name_hybrid_index_str": hybrid_channel_name, 

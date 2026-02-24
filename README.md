@@ -343,7 +343,7 @@ Validation Report + Diagnostics JSON
 
 # Scientific Pipeline
 
-## 1. TIFF Discovery
+## TIFF Discovery
 
 - Automatically selects only valid experimental TIFF files:
 
@@ -353,7 +353,7 @@ Validation Report + Diagnostics JSON
 
 ---
 
-## 2. BioIO Stacking 
+## BioIO Stacking 
 
 - Stacking is performed using BioImage-native structures (xarray) rather than manual numpy stacking.
 
@@ -367,7 +367,7 @@ Validation Report + Diagnostics JSON
 
 ---
 
-## 3. Metadata Extraction
+## Metadata Extraction
 
 - Extracted via: BioIOMetadataExtractor
 
@@ -383,7 +383,7 @@ Validation Report + Diagnostics JSON
 
 ---
 
-## 4. XML Validation
+## XML Validation
 
 - Experiment.xml is parsed and compared against BioIO metadata.
 
@@ -399,7 +399,7 @@ Validation Report + Diagnostics JSON
 
 ---
 
-## 5. Scientific Output Naming
+## Scientific Output Naming
 
 - Output filenames automatically encode experiment structure, with automatically detected Z slice or T series or dual mode:
 
@@ -418,7 +418,7 @@ Output\_ChanA\_X001\_Y075\_Z001\_stack75\_T001.ome.tif
 
 ---
 
-## 6. Output Writing
+## Output Writing
 
 - Primary format: OME-TIFF
 
@@ -428,7 +428,7 @@ Output\_ChanA\_X001\_Y075\_Z001\_stack75\_T001.ome.tif
 
 ---
 
-## 7. Validation Report
+## Validation Report
 
 A detailed JSON summary is generated:
 
@@ -447,21 +447,52 @@ Output_-.validation.json
 
 ---
 
-## 8. Running
+## How to Run
 
+```bash
 uv run python run\_bioio\_process\_experiment.py
---tiff-dir path/to/tiffs
---xml path/to/Experiment.xml
---output-dir output\_root
+--tiff-dir path/to/tiffs \
+--xml path/to/Experiment.xml \
+--output-dir output\_root 
+```
 
 For more parser argument type: uv run python run\_bioio\_process\_experiment.py --help
 
+**Note :** We can make it CLI run to run it easily 
+
 ---
 
+## Run Unit Tests
+
+ -**Unit tests (default)**
+
+```bash
+uv run pytest -m unit
+```
+-**Local dataset validation**
+
+```bash
+uv run pytest tests/ -m integration\_bioio 
+  --local-tiff-dir "Your local tiff's directory path" 
+  --local-xml \
+```
+-**Google Drive dataset**
+
+```bash
+
+uv run pytest tests \
+  -v -m gdrive_bioio -s --gdrive-folder \
+  --gdrive-folder "URL" \
+  --gdrive-sa-json "/credentials.json"
+```
+---
 
 # If environment issues occur:, don't worry run diagnostic script 
 
+```bash
 ./fix\_env.sh
+```
+---
 
 **Checks:*
 
@@ -484,9 +515,12 @@ Fix: uv add bioio-tifffile
 
 ## Broken environment
 
+---
+
+```bash
 rm -rf .venv
 uv sync
-
+```
 ---
 
 # Design Philosophy
