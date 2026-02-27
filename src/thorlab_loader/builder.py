@@ -103,7 +103,7 @@ class ThorlabBuilder:
 
         # Float → warn + round
         if isinstance(value, float):
-            logger.warning(
+            loggeread_stackr.warning(
                 f"[thorlab_loader] Metadata field '{name}' is float ({value}). "
                 "Rounding to nearest integer."
             )

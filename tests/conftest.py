@@ -35,23 +35,20 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "unit: fast unit tests (default)",
-    )
-    config.addinivalue_line(
-        "markers",
-        "local: tests requiring real local TIFF/XML data",
-    )
-    config.addinivalue_line(
-        "markers",
-        "gdrive: tests requiring Google Drive access",
-    )
-    config.addinivalue_line(
-        "markers",
-        "integration: integration tests using real local data",
-    )
 
+    markers = [
+        "unit: fast synthetic unit tests",
+        "local: requires --local-tiff-dir and --local-xml",
+        "gdrive: requires Google Drive service account",
+        "gdrive_bioio: Google Drive + BioIO validation",
+        "integration: full pipeline using local real data",
+        "integration_bioio: full BioIO integration test",
+        "slow: heavy dataset or stress test",
+        "regression: scientific reproducibility tests",
+    ]
+
+    for m in markers:
+        config.addinivalue_line("markers", m)
 
 # --------------------------------------------------
 # Temporary output directory
@@ -62,7 +59,6 @@ def tmp_output_root(tmp_path):
     out = tmp_path / "outputs"
     out.mkdir()
     return out
-
 
 # --------------------------------------------------
 # Fake unit-test dataset (CI-safe)
@@ -134,6 +130,7 @@ def gdrive_dataset(pytestconfig, tmp_path_factory):
     )
 
     work_dir = tmp_path_factory.mktemp("gdrive_work")
+    print(f"\n[DEBUG] GDrive Work Directory: {work_dir}")
 
     extracted = download_and_extract_drive_folder(
         folder_url=folder,
@@ -141,6 +138,6 @@ def gdrive_dataset(pytestconfig, tmp_path_factory):
         auth_mode="service_account",
         service_account_json=sa_json,
     )
-
+    print(f"Data extraction from Google Drive done sucessfully: {folder}")
     return extracted
 

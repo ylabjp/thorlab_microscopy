@@ -1,8 +1,8 @@
 # Thorlab Microscopy Loader  
 
-**Convert raw Thorlab TIFF files + Experiment.xml into OME-TIFF (Fiji-compatible)**
+-*Convert raw Thorlab TIFF files + Experiment.xml into OME-TIFF (Fiji-compatible)**
 
-This package loads Thorlab microscopy outputs — multiple TIFF image planes plus the corresponding `Experiment.xml` metadata — and converts them into a **Fiji/ImageJ-compatible OME-TIFF hyperstack** for the downstream analysis.
+This package loads Thorlab microscopy outputs — multiple TIFF image planes plus the corresponding `Experiment.xml` metadata — and converts them into a -*Fiji/ImageJ-compatible OME-TIFF hyperstack** for the downstream analysis.
 
 ---
 
@@ -60,8 +60,8 @@ The pipeline supports two exclusive modes:
  
 | Mode           | Description                                            |
 | -------------- | ------------------------------------------------------ |
-| **Local mode** | Process TIFF + XML already on disk                     |
-| **Drive mode** | Automatically download ZIPs from Google Drive, extract, then process for the test, runs under Pytest|
+| -*Local mode** | Process TIFF + XML already on disk                     |
+| -*Drive mode** | Automatically download ZIPs from Google Drive, extract, then process for the test, runs under Pytest|
 
 ---
 
@@ -128,21 +128,21 @@ Use:
 --auth_mode oauth --client_secret path/to/client_secret.json
 ```
 
-Credentials and tokens **Must NOT be Committed**.
+Credentials and tokens -*Must NOT be Committed**.
 Add credentials/ to .gitignore.
 
 ---
 
 ## Testing: The test suite is organized into three levels.
 
-1. **Unit tests (default)**
+1. -*Unit tests (default)**
 
 Fast tests using synthetic data.
 
 ```bash
 uv run pytest tests
 ```
-2. **Local integration tests (real data)**
+2. -*Local integration tests (real data)**
 
 Runs the full pipeline on a real local dataset.
 
@@ -152,7 +152,7 @@ uv run pytest tests \
   --local-tiff-dir /User Tiff Path \
   --local-xml /User XML Path
 ````
-3. **Google Drive integration tests**
+3. -*Google Drive integration tests**
 
 Downloads and processes real datasets from Google Drive using a service account.
 
@@ -162,7 +162,7 @@ uv run pytest tests \
   --gdrive-folder "https://drive.google.com/drive/folders/XXXX" \
   --gdrive-sa-json "/User Path/credentials/service_account.json"
 ```
-**These tests are opt-in and skipped unless credentials are provided.**
+-*These tests are opt-in and skipped unless credentials are provided.**
 ---
 
 ### Expected Drive structure
@@ -173,7 +173,7 @@ Drive Folder/
  └── ...
 ```
 
-**Each ZIP should contain:**
+-*Each ZIP should contain:**
 ```pgsql
 HA_488_XYT/
  ├── ChanA_001_001_001.tif
@@ -264,6 +264,277 @@ Each dataset writes a dataset\_summary.json including:
 
 Do not commit credentials
 ---
+---
+
+# Thorlab BioIO Processing Pipeline
+
+-*Reconstruction pipeline for converting Thorlabs microscopy TIFF datasets into validated OME datasets using fully BioIO**.
+-*BioIO:** Image Reading, Metadata Conversion, and Image Writing for Microscopy Images in Pure Python.
+
+## This framework:
+  - Automatically discovers valid TIFF files  
+  - Stacks experimental datasets using BioIO-native logic  
+  - Extracts standardized microscopy metadata  
+  - Validates physical parameters against Experiment.xml  
+  - Writes OME-TIFF (and optionally OME-Zarr) output  
+  - Generates detailed JSON validation reports  
+  - Provides advanced environment diagnostics and installation if any problem occurs in the run time  
+
+---
+
+## Overview
+
+The pipeline reconstructs experiments from raw Thorlabs acquisitions and diffrent :
+
+Raw TIFF Folder + Experiment.xml
+            │
+            ▼
+Automatic TIFF Selection
+(valid acquisition frames only)
+            │
+            ▼
+BioIO Stack Builder
+(auto-dimension aware stacking)
+            │
+            ▼
+BioIO Metadata Extraction
+(StandardMetadata + physical calibration)
+            │
+            ▼
+XML ↔ Image Cross Validation
+(experimental vs reconstructed metadata)
+            │
+            ▼
+Automatic Scientific Output Naming
+(Z-stack / Time-series aware)
+            │
+            ▼
+OME Dataset Writer
+(OME-TIFF / OME-Zarr)
+            │
+            ▼
+Validation Report + Diagnostics JSON
+
+---
+
+# Architecture
+
+- src/thorlab\_loader/
+
+- backends/
+  - bioio\_thorlab\_builder.py # main reconstruction pipeline
+  - bioio\_reader.py # BioImage wrapper
+  - bioio\_metadata.py # standardized metadata extractor
+  - bioio\_writer.py # OME writer
+
+- stacking/
+   - bioio\_stack\_builder.py # BioIO-based stacking
+
+- utils/
+  - file\_selection.py # TIFF filtering logic
+  - outfile\_name.py # scientific output naming
+
+- xml/
+  - xml\_parser.py # Experiment.xml parsing
+
+-*Note : These are the main functions and others many do exists and using in the run time** 
+
+---
+
+# Scientific Pipeline
+
+## TIFF Discovery
+
+- Automatically selects only valid experimental TIFF files:
+
+- Example accepted naming: Output\_ChanA\_001\_001\_001.tif
+
+- Non-experimental TIFFs (e.g. Stack.tif) are ignored.
+
+---
+
+## BioIO Stacking 
+
+- Stacking is performed using BioImage-native structures (xarray) rather than manual numpy stacking.
+
+**Supported input dimensions:**
+
+(Z,Y,X)
+(C,Z,Y,X)
+(T,Z,Y,X)
+
+- Output normalized internally to:  TCZYX
+
+---
+
+## Metadata Extraction
+
+- Extracted via: BioIOMetadataExtractor
+
+**Includes:**
+
+ - dimension order
+ - pixel sizes (XYZ)
+ - scale factors
+ - time interval
+ - objective metadata
+ - channel information
+ - acquisition timestamps
+
+---
+
+## XML Validation
+
+- Experiment.xml is parsed and compared against BioIO metadata.
+
+- **Validation includes:**
+
+ - image size
+ - pixel calibration
+ - Z depth
+ - timepoints
+ - channel consistency
+ - objective parameters
+ - dwell time / frame rate (if available)
+
+---
+
+## Scientific Output Naming
+
+- Output filenames automatically encode experiment structure, with automatically detected Z slice or T series or dual mode:
+
+**Example:**
+
+output\_beada\_001/
+Output\_ChanA\_X001\_Y075\_Z001\_stack75\_T001.ome.tif
+
+**Naming reflects:**
+
+- channel
+- stage position
+- Z stack range
+- stack size
+- time index
+
+---
+
+## Output Writing
+
+- Primary format: OME-TIFF
+
+- Optional: OME-Zarr
+
+- Compression configurable (default zlib).
+
+---
+
+## Validation Report
+
+A detailed JSON summary is generated:
+
+Output_-.validation.json
+
+**Includes:**
+
+- source input paths
+- Time run
+- Channel name index(like 0/1..) str(like ChanA..)
+- extracted BioIO metadata
+- XML comparison results
+- validation status
+- pipeline version
+- Others
+
+---
+
+## How to Run
+
+```bash
+uv run python run\_bioio\_process\_experiment.py
+--tiff-dir path/to/tiffs \
+--xml path/to/Experiment.xml \
+--output-dir output\_root 
+```
+
+For more parser argument type: uv run python run\_bioio\_process\_experiment.py --help
+
+**Note :** We can make it CLI run to run it easily 
+
+---
+
+## Run Unit Tests
+
+ -**Unit tests (default)**
+
+```bash
+uv run pytest -m unit
+```
+-**Local dataset validation**
+
+```bash
+uv run pytest tests/ -m integration\_bioio 
+  --local-tiff-dir "Your local tiff's directory path" 
+  --local-xml \
+```
+-**Google Drive dataset**
+
+```bash
+
+uv run pytest tests \
+  -v -m gdrive_bioio -s --gdrive-folder \
+  --gdrive-folder "URL" \
+  --gdrive-sa-json "/credentials.json"
+```
+---
+
+# If environment issues occur:, don't worry run diagnostic script 
+
+```bash
+./fix\_env.sh
+```
+---
+
+**Checks:*
+
+- uv environment integrity
+- pip availability
+- BioIO plugin presence
+- Python executable consistency
+
+---
+
+# Common Issues
+
+## Missing plugin
+
+ModuleNotFoundError: bioio\_tifffile
+
+Fix: uv add bioio-tifffile
+
+---
+
+## Broken environment
+
+---
+
+```bash
+rm -rf .venv
+uv sync
+```
+---
+
+# Design Philosophy
+
+This pipeline is designed for:
+
+- reproducible microscopy analysis
+- research-grade metadata validation
+- large dataset robustness
+- plugin-based extensibility
+
+All image operations are delegated to BioIO where possible.
+
+---
 
 ## Contributing
 
@@ -277,3 +548,4 @@ Do not commit credentials
 
 - Open a Pull Request (PR) with a clear description of your changes.
 
+---

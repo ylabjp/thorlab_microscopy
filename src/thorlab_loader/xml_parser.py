@@ -1,62 +1,112 @@
 # src/thorlab_loader/xml_parser.py
+
 from pathlib import Path
 from lxml import etree
-from typing import Dict, List
+from typing import Dict
 
 
 class ExperimentXMLParser:
-    """
-    Minimal, robust Experiment.xml parser.
-    Raises FileNotFoundError if xml missing.
-    extract_metadata returns keys: SizeZ, SizeT, Channels (list), PixelSizeX/Y
-    """
 
     def __init__(self, xml_path: str):
-        self.xml_path = Path(xml_path)
-        if not self.xml_path.exists():
-            raise FileNotFoundError(f"Experiment.xml required but not found: {xml_path}")
-        try:
-            self.tree = etree.parse(str(self.xml_path))
-            self.root = self.tree.getroot()
-            self.ns = self.root.nsmap
-        except Exception as e:
-            raise RuntimeError(f"Failed to parse XML: {e}")
 
-    def _find_pixels(self):
-        # try common tags
-        pixels = self.root.findall(".//Pixels", namespaces=self.ns)
-        return pixels[0] if pixels else None
+        self.xml_path = Path(xml_path)
+
+        if not self.xml_path.exists():
+            raise FileNotFoundError(f"Experiment.xml missing: {xml_path}")
+
+        self.tree = etree.parse(str(self.xml_path))
+        self.root = self.tree.getroot()
 
     def extract_metadata(self) -> Dict:
-        pixels = self._find_pixels()
-        meta = {"SizeZ": None, "SizeT": None, "Channels": None, "PixelSizeX": None, "PixelSizeY": None}
-        if pixels is None:
-            return meta
-        # SizeZ / SizeT
-        try:
-            sz = pixels.get("SizeZ")
-            meta["SizeZ"] = int(sz) if sz is not None else None
-        except Exception:
-            meta["SizeZ"] = None
-        try:
-            st = pixels.get("SizeT")
-            meta["SizeT"] = int(st) if st is not None else None
-        except Exception:
-            meta["SizeT"] = None
+
+        meta = {
+            "SizeX": None,
+            "SizeY": None,
+            "SizeZ": None,
+            "SizeT": None,
+            "Channels": [],
+            "PixelSizeX": None,
+            "PixelSizeY": None,
+            "PixelSizeZ": None,
+            "TimeIntervalSec": None,
+            "Objective": None,
+            "FrameRate": None,
+            "DwellTime": None,
+        }
+
+        # -------------------------
+        # LSM block (main imaging parameters)
+        # -------------------------
+
+        lsm = self.root.find(".//LSM")
+
+        if lsm is not None:
+
+            meta["SizeX"] = self._safe_int(lsm.get("pixelX"))
+            meta["SizeY"] = self._safe_int(lsm.get("pixelY"))
+
+            meta["PixelSizeX"] = self._safe_float(lsm.get("pixelWidthUM"))
+            meta["PixelSizeY"] = self._safe_float(lsm.get("pixelHeightUM"))
+
+            meta["FrameRate"] = self._safe_float(lsm.get("frameRate"))
+            meta["DwellTime"] = self._safe_float(lsm.get("dwellTime"))
+
+        # -------------------------
+        # Z Stage
+        # -------------------------
+
+        zstage = self.root.find(".//ZStage")
+
+        if zstage is not None:
+
+            meta["SizeZ"] = self._safe_int(zstage.get("steps"))
+
+            step = self._safe_float(zstage.get("stepSizeUM"))
+            if step is not None:
+                meta["PixelSizeZ"] = abs(step)
+
+        # -------------------------
+        # Timelapse
+        # -------------------------
+
+        tl = self.root.find(".//Timelapse")
+
+        if tl is not None:
+
+            meta["SizeT"] = self._safe_int(tl.get("timepoints"))
+            meta["TimeIntervalSec"] = self._safe_float(tl.get("intervalSec"))
+
+        # -------------------------
         # Channels
-        chs = []
-        for ch in pixels.findall(".//Channel"):
-            name = ch.get("Name") or ch.get("ID") or ch.get("Name")
+        # -------------------------
+
+        for w in self.root.findall(".//Wavelength"):
+
+            name = w.get("name")
+
             if name:
-                chs.append(name)
-        meta["Channels"] = chs if chs else None
-        # pixel sizes
-        try:
-            px = pixels.get("PhysicalSizeX")
-            py = pixels.get("PhysicalSizeY")
-            meta["PixelSizeX"] = float(px) if px else None
-            meta["PixelSizeY"] = float(py) if py else None
-        except Exception:
-            meta["PixelSizeX"] = meta["PixelSizeY"] = None
+                meta["Channels"].append(name)
+
+        # -------------------------
+        # Objective
+        # -------------------------
+
+        mag = self.root.find(".//Magnification")
+
+        if mag is not None:
+            meta["Objective"] = mag.get("name")
+
         return meta
+
+    def _safe_int(self, value):
+        try:
+            return int(value)
+        except:
+            return None
+
+    def _safe_float(self, value):
+        try:
+            return float(value)
+        except:
+            return None
 

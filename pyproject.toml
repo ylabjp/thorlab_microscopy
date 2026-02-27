@@ -17,6 +17,14 @@ dependencies = [
     "google-auth-oauthlib",
     "google-auth-httplib2",
     "google-api-python-client",
+    "bioio>=1.3.0",
+    "bioio-ome-tiff",
+    "tifffile",
+    "bioio-tifffile",
+    "bioio-ome-tiff",
+    "ome-types",
+    "xarray",
+    "dask[array]",
 ]
 
 [build-system]
@@ -30,10 +38,13 @@ packages = ["thorlab_loader"]
 [dependency-groups]
 dev = [
     "pytest>=9.0.1",
+    "pytest-mock"
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
+zarr = [
+  "bioio-ome-zarr",
+  "ome-zarr",
+  "zarr",
+  "numcodecs"
 ]
-
