@@ -14,7 +14,12 @@ from pathlib import Path
 import argparse
 
 from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
-from thorlab_loader.utils import get_theme, style_print
+from ylabcommon.utils.utils import get_theme, style_print
+from ylabcommon.io.output_build_dir import build_output_dir_name
+
+##Before used
+#from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
+#from thorlab_loader.utils import get_theme, style_print
 
 # =============================================================================
 # Argument Parser
@@ -56,9 +61,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--no-validate",
+        "--no_validate",
         action="store_true",
         help="Disable XML ↔ BioIO metadata validation",
+    )
+  
+    parser.add_argument(
+    "--base_path",
+    type=str,
+    required=True,
+    help="Relative dataset path starting from, on which basis create output folder"
     )
 
     parser.add_argument(
@@ -74,6 +86,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Compression level (0–9)",
     )
 
+    parser.add_argument(
+        "--dry_run", 
+        action="store_true", 
+        help="Run full pipeline without writing any output files"
+    )
+
     parser.add_argument("--verbose", action="store_true")
 
     return parser
@@ -87,14 +105,10 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     
-    dataset_name = args.tiff_dir.name
-
-    if args.output_dir:
-        output_dir = args.output_dir/f"output_{dataset_name}"
-    else:
-        output_dir = args.tiff_dir.parent/f"output_{dataset_name}"
-
-    output_dir.mkdir(parents=True, exist_ok=True)
+    #dataset_name = args.tiff_dir.name
+    dataset_name = args.base_path
+    print("DATASET NAME:", dataset_name)
+    output_dir = build_output_dir_name("Thorlab", args.output_dir, f"{dataset_name}")
 
     theme = get_theme()
 
@@ -111,7 +125,8 @@ def main() -> None:
         output_dir=output_dir,
         compression=args.compression,
         compression_level=args.compression_level,
-        validate_metadata=not args.no_validate,
+        validate_metadata=True if args.no_validate else False,
+        dry_run=args.dry_run,
     )
 
     builder.build()

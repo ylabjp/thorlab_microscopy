@@ -6,7 +6,7 @@ import math
 import pandas as pd
 import logging
 
-from .utils import find_tiff_files, log_info, log_warn
+from ylabcommon.utils import find_tiff_files, log_info, log_warn
 from .xml_parser import ExperimentXMLParser
 from .metadata import ThorlabMetadata
 from .tiff_reader import read_stack

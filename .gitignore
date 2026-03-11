@@ -83,6 +83,7 @@ logs/
 tmp/
 scratch/
 Output/
+Thorlab_*/
 
 # ------------------------------
 # Google Drive API credentials  

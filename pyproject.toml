@@ -25,7 +25,12 @@ dependencies = [
     "ome-types",
     "xarray",
     "dask[array]",
+    "ylabcommon",
 ]
+
+[tool.uv.sources]
+#ylabcommon = { git = "https://github.com/ylabjp/ylab-common-scripts" }
+ylabcommon = { path = "../YlabCommonScripts/ylab-common-scripts", editable = true }
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
