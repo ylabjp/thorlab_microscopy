@@ -537,6 +537,7 @@ Output_-.validation.json
 uv run python run\_bioio\_process\_experiment.py
 --tiff-dir path/to/tiffs \
 --xml path/to/Experiment.xml \
+--base_path beada_001
 --output-dir output\_root 
 ```
 
