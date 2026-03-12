@@ -108,7 +108,16 @@ def main() -> None:
     #dataset_name = args.tiff_dir.name
     dataset_name = args.base_path
     print("DATASET NAME:", dataset_name)
-    output_dir = build_output_dir_name("Thorlab", args.output_dir, f"{dataset_name}")
+   
+
+    if args.diff_outdirpath:
+        change_output_dir_path = args.diff_outdirpath
+    else:
+        change_output_dir_path = None
+
+    print("PATH NAME =========================", change_output_dir_path)
+    #output_dir = build_output_dir_name("Thorlab", change_output_dir, f"{dataset_name}")
+    output_dir = build_output_dir_name("Thorlab", args.output_dir, f"{dataset_name}", change_output_dir_path)
 
     theme = get_theme()
 
