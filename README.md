@@ -71,6 +71,7 @@ The pipeline supports two exclusive modes:
 uv run python run_process_experiment.py \
   --tiff_dir /path/to/experiment_folder \
   --xml /path/to/experiment_folder/Experiment.xml \
+  --base_path beada_001 \
   --output_dir ./output \
   --verbose
 ```
@@ -268,10 +269,19 @@ Do not commit credentials
 
 # Thorlab BioIO Processing Pipeline
 
--*Reconstruction pipeline for converting Thorlabs microscopy TIFF datasets into validated OME datasets using fully BioIO**.
--*BioIO:** Image Reading, Metadata Conversion, and Image Writing for Microscopy Images in Pure Python.
+Reconstruction pipeline for converting Thorlabs microscopy TIFF datasets 
+through validated OME datasets using BioIO together with the shared
+[ylabcommon](https://github.com/ylabjp/ylab-common-scripts) framework.<br>
+
+BioIO provides standardized microscopy image IO and metadata handling, while ylabcommon 
+supplies reusable utilities shared across YLab microscopy pipelines (e.g., Thorlab and Keyence).<br>
+
+The Thorlab loader remains responsible for Thorlab-specific dataset handling, while 
+shared components such as stacking, metadata utilities, reporting, and writing are provided by ylabcommon.
+
 
 ## This framework:
+
   - Automatically discovers valid TIFF files  
   - Stacks experimental datasets using BioIO-native logic  
   - Extracts standardized microscopy metadata  
@@ -282,62 +292,31 @@ Do not commit credentials
 
 ---
 
-## Overview
+## Framework Components
 
 The pipeline reconstructs experiments from raw Thorlabs acquisitions and diffrent :
 
-Raw TIFF Folder + Experiment.xml
-            │
-            ▼
-Automatic TIFF Selection
-(valid acquisition frames only)
-            │
-            ▼
-BioIO Stack Builder
-(auto-dimension aware stacking)
-            │
-            ▼
-BioIO Metadata Extraction
-(StandardMetadata + physical calibration)
-            │
-            ▼
-XML ↔ Image Cross Validation
-(experimental vs reconstructed metadata)
-            │
-            ▼
-Automatic Scientific Output Naming
-(Z-stack / Time-series aware)
-            │
-            ▼
-OME Dataset Writer
-(OME-TIFF / OME-Zarr)
-            │
-            ▼
-Validation Report + Diagnostics JSON
+-> Raw TIFF Folder + Experiment.xmli<br>
 
----
+-> Automatic TIFF Selection<br>
+(valid acquisition frames only)<br>
 
-# Architecture
+-> BioIO Stack Builder<br>
+(auto-dimension aware stacking)<br>
 
-- src/thorlab\_loader/
+-> BioIO Metadata Extraction<br>
+(StandardMetadata + physical calibration)<br>
 
-- backends/
-  - bioio\_thorlab\_builder.py # main reconstruction pipeline
-  - bioio\_reader.py # BioImage wrapper
-  - bioio\_metadata.py # standardized metadata extractor
-  - bioio\_writer.py # OME writer
+-> XML ↔ Image Cross Validation<br>
+(experimental vs reconstructed metadata)<br>
 
-- stacking/
-   - bioio\_stack\_builder.py # BioIO-based stacking
+-> Automatic Scientific Output Naming<br>
+(Z-stack / Time-series aware)<br>
 
-- utils/
-  - file\_selection.py # TIFF filtering logic
-  - outfile\_name.py # scientific output naming
+-> OME Dataset Writer<br>
+(OME-TIFF / OME-Zarr)<br>
 
-- xml/
-  - xml\_parser.py # Experiment.xml parsing
-
--*Note : These are the main functions and others many do exists and using in the run time** 
+-> Validation Report + Diagnostics JSON<br>
 
 ---
 
@@ -359,9 +338,9 @@ Validation Report + Diagnostics JSON
 
 **Supported input dimensions:**
 
-(Z,Y,X)
-(C,Z,Y,X)
-(T,Z,Y,X)
+(Z,Y,X)<br>
+(C,Z,Y,X)<br>
+(T,Z,Y,X)<br>
 
 - Output normalized internally to:  TCZYX
 
@@ -399,36 +378,141 @@ Validation Report + Diagnostics JSON
 
 ---
 
-## Scientific Output Naming
+## I/O dataset structure
 
-- Output filenames automatically encode experiment structure, with automatically detected Z slice or T series or dual mode:
+### Example Input Dataset
 
-**Example:**
+- Thorlab acquisitions contain TIFF planes structured by channel: 
+    - X stage position
+    - Y stage position
+    - Z slice and time index.
 
-output\_beada\_001/
-Output\_ChanA\_X001\_Y075\_Z001\_stack75\_T001.ome.tif
+### Example:
 
-**Naming reflects:**
+```PostgreSQL
+dataset/
+├── ChanA_001_001_001_001.tif
+├── ChanA_001_001_002_001.tif
+├── ChanA_001_001_003_001.tif
+├── ChanB_001_001_001_001.tif
+└── ...
+```
 
-- channel
-- stage position
-- Z stack range
-- stack size
-- time index
+### Filename structure:
+
+| Item | Description |
+|:-----|:------------|
+|ChanA |Channel name |
+|001  |X stage position|
+|001  |Y stage position |
+|0016 |Z slice|
+|001  |Time index|
+
+## Example Output Dataset
+
+Output datasets are written into a timestamped directory, preserving the experiment input structure.
+
+             Format:(YYMMDD9)(Time)
+Thorlab_Output_20260311_081658/
+  &ensp;beada_001/
+    &ensp;&ensp;ChanA_X001_Y001_Z001_to_Z075_stack_T001.ome.tif
+    &ensp;&ensp;ChanA_X001_Y001_Z001_to_Z075_stack_T001.validation.json
+    &ensp;&ensp;ChanA_X001_Y001_Z001_to_Z075_stack_T001.report.txt
+
+**Where:**
+
+- Thorlab_Output_YYYYMMDD_HHMMSS is automatically generated
+
+- the dataset folder corresponds to the input experiment directory
+
+- stack outputs and reports are saved together
 
 ---
 
-## Output Writing
+## Scientific Output Name 
 
-- Primary format: OME-TIFF
+Output filenames automatically encode the experiment structure.
 
-- Optional: OME-Zarr
+- Example:  ChanA_X001_Y001_Z001_to_Z075_stack_T001.ome.tif
 
-- Compression configurable (default zlib).
+- Information Encoded in Output Filename
+
+|Item	| Description|
+|:-----|:------------|
+|ChanA	|Channel name|
+|X001	|X stage position|
+|Y001	|Y stage position|
+|Z001_to_Z075	|Z stack range|
+|stack |Stacked dataset|
+|T001	|Timepoint|
 
 ---
 
-## Validation Report
+## Multi-Position Experiments
+
+If multiple stage positions are present (e.g. XY scanning), the pipeline will generate stacks for each position.
+
+Example input:<br>
+
+ChanA_001_001_001_001.tif
+ChanA_002_001_001_001.tif
+ChanA_003_001_001_001.tif
+
+Possible output:<br>
+
+ChanA_X001_Y001_Z001_to_Z075_stack_T001.ome.tif
+ChanA_X002_Y001_Z001_to_Z075_stack_T001.ome.tif
+ChanA_X003_Y001_Z001_to_Z075_stack_T001.ome.tif
+
+---
+
+## Dataset Report
+
+Each processed dataset generates two report files.<br>
+                                                              == **Summary Report** ==<br>
+ChanA_X001_Y001_Z001_to_Z075_stack_T001.validation.json       ->  *Good for machine readeable* 
+ChanA_X001_Y001_Z001_to_Z075_stack_T001.report.txt            ->  *Easy for human quick look*
+
+---
+
+### Purpose:
+
+- File	Description  
+  -- .validation.json	Machine-readable validation report
+  -- .report.txt	Human-readable summary report
+
+- These reports include:
+
+   - detected dataset dimensions
+
+   - extracted BioIO metadata
+
+   - XML comparison results
+
+   - validation status
+
+  - environment diagnostics
+
+---
+
+## Summary
+
+The Thorlab pipeline reconstructs datasets by:
+
+discovering valid TIFF planes
+
+stacking Z slices, channels, and timepoints
+
+validating metadata against Experiment.xml
+
+generating scientific output filenames
+
+writing Fiji-compatible OME-TIFF datasets
+
+producing validation reports
+
+
+---
 
 A detailed JSON summary is generated:
 
@@ -453,6 +537,7 @@ Output_-.validation.json
 uv run python run\_bioio\_process\_experiment.py
 --tiff-dir path/to/tiffs \
 --xml path/to/Experiment.xml \
+--base_path beada_001
 --output-dir output\_root 
 ```
 
@@ -490,7 +575,9 @@ uv run pytest tests \
 # If environment issues occur:, don't worry run diagnostic script 
 
 ```bash
-./fix\_env.sh
+
+source env_common_fix.sh
+
 ```
 ---
 
