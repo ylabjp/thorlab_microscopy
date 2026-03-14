@@ -12,10 +12,12 @@ uv run python bioio_run_process_experiment.py \
 
 from pathlib import Path
 import argparse
+import shutil
 
 from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
 from ylabcommon.utils.utils import get_theme, style_print
 from ylabcommon.io.output_build_dir import build_output_dir_name
+from ylabcommon.utils.infile_experiment_loader import extract_zip_and_find_tiffs
 
 ##Before used
 #from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
@@ -34,7 +36,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--tiff-dir",
-        required=True,
         type=Path,
         help="Folder containing raw Thorlabs TIFF files",
     )
@@ -69,8 +70,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
     "--base_path",
     type=str,
-    required=True,
-    help="Relative dataset path starting from, on which basis create output folder"
+    default=None,
+    help="Base path of dataset (auto-detected provide only for test run)"
+    )
+   
+    parser.add_argument(
+    "--infile_yaml",
+    help="YAML file containing list of dataset zip paths"
+    )
+
+    parser.add_argument(
+    "--singlefilerun",
+    action="store_true",
+    help="Run pipeline for a single dataset (no YAML input)"
     )
 
     parser.add_argument(
@@ -115,9 +127,10 @@ def main() -> None:
     else:
         change_output_dir_path = None
 
-    print("PATH NAME =========================", change_output_dir_path)
-    #output_dir = build_output_dir_name("Thorlab", change_output_dir, f"{dataset_name}")
     output_dir = build_output_dir_name("Thorlab", args.output_dir, f"{dataset_name}", change_output_dir_path)
+
+    if args.singlefilerun and not args.tiff_dir:
+        parser.error("--tiff-dir is required when using --singlefilerun")
 
     theme = get_theme()
 
@@ -128,17 +141,82 @@ def main() -> None:
     style_print(f"Output directory: {args.output_dir}", "info")
     style_print("\n==========================================================", "header")
 
-    builder = ThorlabBioioBuilder(
-        tiff_dir=args.tiff_dir,
-        xml_file=args.xml,
-        output_dir=output_dir,
-        compression=args.compression,
-        compression_level=args.compression_level,
-        validate_metadata=True if args.no_validate else False,
-        dry_run=args.dry_run,
-    )
+    # -----------------------------
+    # Run Over Single file
+    # -----------------------------
 
-    builder.build()
+    if(args.singlefilerun):
+        output_dir = build_output_dir_name("Thorlab", args.output_dir, f"{dataset_name}", change_output_dir_path)
+        builder = ThorlabBioioBuilder(
+            tiff_dir=args.tiff_dir,
+            xml_file=args.xml,
+            output_dir=output_dir,
+            compression=args.compression,
+            compression_level=args.compression_level,
+            validate_metadata=True if args.no_validate else False,
+            dry_run=args.dry_run,
+        )
+
+        builder.build()
+
+    # ----------------------------------------------------------
+    # Run for big chunk data, input zip path's as yamal file 
+    # ----------------------------------------------------------
+
+    else :
+        zip_folders = args.infile_yaml
+        dataset_dirs, top_dir = extract_zip_and_find_tiffs(zip_folders)
+
+        success = []   
+        skip = []
+        total = len(dataset_dirs)
+
+        for i, d in enumerate(dataset_dirs):
+            try:
+                print(f"[{i+1}/{total}] Processing: {d}")
+                output_dir = build_output_dir_name("Keyence", args.output_dir, f"{top_dir[i]}", change_output_dir_path)
+                xml_file = Path(d) /"Experiment.xml"
+               
+                builder = ThorlabBioioBuilder(
+                   tiff_dir=d,
+                   xml_file=xml_file,
+                   output_dir=output_dir,
+                   compression=args.compression,
+                   compression_level=args.compression_level,
+                   validate_metadata=True if args.no_validate else False,
+                   dry_run=args.dry_run,
+                )
+
+                builder.build()
+
+                success.append(d)
+                print("✔ Completed\n")
+
+            except Exception as e:
+                print(f"!!! Skipping {d}")
+                print(e, "\n")
+                if output_dir.exists():
+                    shutil.rmtree(output_dir)
+                    skip.append(d)
+
+    # -----------------------------
+    # Summary
+    # -----------------------------
+
+    if not args.singlefilerun:
+        print("\n==============================")
+        print("      PIPELINE SUMMARY")
+        print("==============================")
+
+        print(f"Total folders : {len(dataset_dirs)}")
+        print(f"Successful    : {len(success)}")
+        print(f"Skipped       : {len(skip)}")
+        print("==============================")
+
+        if skip:
+             print("\nSkipped folders:")
+             for f in skip:
+                 print(f"   {f}")       
 
     print("=============================================================================")
     style_print("[Builder] DONE. Processing completed successfully : success")
