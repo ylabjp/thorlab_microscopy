@@ -533,18 +533,38 @@ Output_-.validation.json
 
 ## How to Run
 
+### For the test run with data 
+
 ```bash
-uv run python run\_bioio\_process\_experiment.py
---tiff-dir path/to/tiffs \
---xml path/to/Experiment.xml \
---base_path beada_001
---output-dir output\_root 
+
+uv run python run_bioio_process_experiment.py \
+--tiff-dir < Like: InFileThorlab/beada_001 > \
+--xml < Like: /InFileThorlab/beada_001/Experiment.xml> \
+--base_path <Like: beada_001> \
+--output-dir <Like: dirX > 
+--diff_outdirpath < Build Output path > 
+--singlefilerun
+
 ```
 
 For more parser argument type: uv run python run\_bioio\_process\_experiment.py --help
 
 **Note :** We can make it CLI run to run it easily 
 
+### Run with input zip files, big chunk data
+
+- The pipeline processes all datasets automatically
+- Output directories follow the structure of the input ZIP file paths
+- Generated files are saved with timestamped names to avoid overwriting previous results
+
+```bash
+
+uv run python run_bioio_process_experiment.py \
+--output-dir < dirX > \
+--diff_outdirpath < Build Output path > \
+--infile_yaml <Data file example : dataset_thorlab.yaml>
+
+```
 ---
 
 ## Run Unit Tests

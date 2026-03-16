@@ -4,19 +4,21 @@ import json
 from datetime import datetime, UTC, timezone
 from bioio_base.types import PhysicalPixelSizes
 
-from ylabcommon.io.file_selection import collect_valid_tiffs
-from ylabcommon.io.outfile_name import build_output_name, extract_dimensions, build_stack_filename
-from ylabcommon.io.summary_metadata_helper import get_enhanced_metadata, generate_file_sha256
+from ylabcommon.utils.file_selection import collect_valid_tiffs
+from ylabcommon.utils.outfile_name import build_output_name, extract_dimensions, build_stack_filename
+from ylabcommon.utils.summary_metadata_helper import get_enhanced_metadata, generate_file_sha256
 from ylabcommon.utils.utils import hybrid, style_print
 from ylabcommon.utils.report_builder import ReportBuilder
+
 from ..xml_parser import ExperimentXMLParser
 
-from ylabcommon.bioio.bioio_reader import BioIOReader
+from ylabcommon.bioio.core.bioio_reader import BioIOReader
+from ylabcommon.bioio.core.bioio_writer import BioIOWriter
 #from ylabcommon.bioio.bioio_metadata import BioIOMetadataExtractor
-from ylabcommon.bioio.thorlab_metadata_extractor import ThorlabMetadataExtractor
-from ylabcommon.bioio.bioio_writer import BioIOWriter
-from ylabcommon.bioio.thorlab_params_adapter import ThorlabParamsAdapter
-from ylabcommon.bioio.thorlab_bioio_stack_builder import stack_thorlab_with_bioio_calibrated, stack_with_bioio, get_channel_names_index
+
+from ylabcommon.bioio.thorlab.thorlab_metadata_extractor import ThorlabMetadataExtractor
+from ylabcommon.bioio.thorlab.thorlab_params_adapter import ThorlabParamsAdapter
+from ylabcommon.bioio.thorlab.thorlab_bioio_stack_builder import stack_thorlab_with_bioio_calibrated, get_channel_names_index
 
 
 
@@ -75,7 +77,6 @@ class ThorlabBioioBuilder:
         
         get_thorlabs_params = self._get_params()
         stacked_data, tiff_files = stack_thorlab_with_bioio_calibrated(tiff_files, self.xml_file, get_thorlabs_params)
-        #stacked_data, tiff_files = stack_with_bioio(tiff_files)
 
         total_depth_um = stacked_data.Z.max().values
         print(f"Total volume depth: {total_depth_um} microns")
@@ -303,8 +304,8 @@ class ThorlabBioioBuilder:
         #output_path = build_output_name(self.output_dir, tiff_files, Z_stack_val, T_stack_val)
 
         image_name, dims = extract_dimensions(tiff_files)
-
-        output_filename = build_stack_filename(self.output_dir, image_name, dims)
+        z_mx_min_re = [1,1,"None"] #Dummmy in case of Thorlab
+        output_filename = build_stack_filename(self.output_dir, image_name, dims, z_mx_min_re)
 
         print(output_filename)
 
