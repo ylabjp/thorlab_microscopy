@@ -51,6 +51,7 @@ class ThorlabBioioBuilder:
         self.compression_level = compression_level
         self.validate_metadata = validate_metadata
 
+
     # -------------------------------------------------
     # TIFF DISCOVERY + STACK
     # -------------------------------------------------
@@ -320,8 +321,8 @@ class ThorlabBioioBuilder:
         else:
             if report["status"] == "VALIDATED":
                 self._write(stacked_data, image_meta, self.output_fname)
-    
-
+            
+        return stacked_data,image_meta
         #===============================================================
         #Write summary report 
         #===============================================================
