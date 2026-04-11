@@ -26,6 +26,7 @@ dependencies = [
     "xarray",
     "dask[array]",
     "ylabcommon@ git+https://github.com/ylabjp/ylab-common-scripts",
+    "bioio-ome-zarr>=1.2.0",
 ]
 
 [tool.uv.sources]

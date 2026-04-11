@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Optional
+
 import json
 from datetime import datetime, UTC, timezone
-from bioio_base.types import PhysicalPixelSizes
+
 
 from ylabcommon.utils.file_selection import collect_valid_tiffs
-from ylabcommon.utils.outfile_name import build_output_name, extract_dimensions, build_stack_filename
+from ylabcommon.utils.outfile_name import extract_dimensions
 from ylabcommon.utils.summary_metadata_helper import get_enhanced_metadata, generate_file_sha256
 from ylabcommon.utils.utils import hybrid, style_print
 from ylabcommon.utils.report_builder import ReportBuilder
@@ -34,8 +34,7 @@ class ThorlabBioioBuilder:
     def __init__(
         self,
         tiff_dir: Path,
-        xml_file: Optional[Path],
-        output_dir: Path,
+        output_fname: Path,
         *,
         compression: str = "zlib",
         compression_level: int = 6,
@@ -44,15 +43,13 @@ class ThorlabBioioBuilder:
     ):
 
         self.tiff_dir = Path(tiff_dir)
-        self.xml_file = Path(xml_file) if xml_file else None
-        self.output_dir = Path(output_dir)
+        self.xml_file = self.tiff_dir/"Experiment.xml"
+        self.output_fname = Path(output_fname)
         self.dry_run = dry_run
 
         self.compression = compression
         self.compression_level = compression_level
         self.validate_metadata = validate_metadata
-
-        self.output_dir.mkdir(parents=True, exist_ok=True)
 
     # -------------------------------------------------
     # TIFF DISCOVERY + STACK
@@ -299,17 +296,8 @@ class ThorlabBioioBuilder:
 
         report = self._validate_thorlab_stack(xml_meta, image_meta)
         
-        Z_stack_val = data.shape[2]
-        T_stack_val = data.shape[0]
-        #output_path = build_output_name(self.output_dir, tiff_files, Z_stack_val, T_stack_val)
-
         image_name, dims = extract_dimensions(tiff_files)
-        z_mx_min_re = [1,1,"None"] #Dummmy in case of Thorlab
-        output_filename = build_stack_filename(self.output_dir, image_name, dims, z_mx_min_re)
-
-        print(output_filename)
-
-
+        
         if self.dry_run:
             style_print("[DRY RUN ENABLED]", "info")
             print("[Validating] TIFF discovery successful")
@@ -322,67 +310,66 @@ class ThorlabBioioBuilder:
             print(f"Input TIFF count : {len(tiff_files)}")
             print(f"Stack shape      : {data.shape}")
             print(f"Pixel size (µm)  : {image_meta.pixel_size}")
-            print(f"Output name      : {output_path.name}.ome.tif")
+            print(f"Output name      : {self.output_fname.name}")
             print("\nDry run completed successfully.\n")
             return
 
         if self.validate_metadata:
             style_print("Skipping Validation Run time set args.no_validate", "info")
-            self._write(stacked_data, image_meta, output_filename)
+            self._write(stacked_data, image_meta, self.output_fname)
         else:
             if report["status"] == "VALIDATED":
-                self._write(stacked_data, image_meta, output_filename)
+                self._write(stacked_data, image_meta, self.output_fname)
     
 
         #===============================================================
         #Write summary report 
         #===============================================================
 
-        summary_report = ReportBuilder()
+        # summary_report = ReportBuilder()
 
-        # dataset information
-        summary_report.collect_dataset(
-            str(self.tiff_dir),
-            "Thorlab",
-            len(tiff_files)
-        )
+        # # dataset information
+        # summary_report.collect_dataset(
+        #     str(self.tiff_dir),
+        #     "Thorlab",
+        #     len(tiff_files)
+        # )
 
-        # experiment XML
-        summary_report.add_section(
-            "experiment_files",
-            {
-                "experiment_xml": str(self.xml_file)
-             }
-        )
+        # # experiment XML
+        # summary_report.add_section(
+        #     "experiment_files",
+        #     {
+        #         "experiment_xml": str(self.xml_file)
+        #      }
+        # )
 
-        # hybrid channel names
-        summary_report.add_section(
-            "thorlab_channels",
-            {
-                 "Channel_name_hybrid_index_str": hybrid_channel_name
-            }
-        )
+        # # hybrid channel names
+        # summary_report.add_section(
+        #     "thorlab_channels",
+        #     {
+        #          "Channel_name_hybrid_index_str": hybrid_channel_name
+        #     }
+        # )
 
-        # metadata from stacked TIFF
-        summary_report.add_section(
-            "image_metadata",
-            image_meta
-        )
+        # # metadata from stacked TIFF
+        # summary_report.add_section(
+        #     "image_metadata",
+        #     image_meta
+        # )
 
-        # dimensions detected from filenames
-        summary_report.set_dimensions(dims)
+        # # dimensions detected from filenames
+        # summary_report.set_dimensions(dims)
 
-        # stack metadata (shape, dtype, pixel sizes etc.)
-        summary_report.collect_metadata(image_meta, stacked_data)
+        # # stack metadata (shape, dtype, pixel sizes etc.)
+        # summary_report.collect_metadata(image_meta, stacked_data)
 
-        # output information
-        summary_report.set_output(self.output_dir, output_filename)
+        # # output information
+        # summary_report.set_output(self.output_dir, output_filename)
 
-        # validation
-        summary_report.finalize_validation()
+        # # validation
+        # summary_report.finalize_validation()
 
-        # write report
-        summary_report.write(self.output_dir, output_filename)
+        # # write report
+        # summary_report.write(self.output_dir, output_filename)
 
         print("[Builder] DONE.")
-

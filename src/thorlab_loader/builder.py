@@ -24,7 +24,7 @@ class ThorlabBuilder:
 
     def __init__(self, tiff_dir: str):
         self.tiff_dir = Path(tiff_dir)
-        self.xml_path = self.tiff_dir.parent/"Experiment.xml"
+        self.xml_path = self.tiff_dir/"Experiment.xml"
 
         if not self.xml_path.exists():
             raise FileNotFoundError("Experiment.xml is required but not found.")
