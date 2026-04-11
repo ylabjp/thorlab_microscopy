@@ -45,8 +45,7 @@ def parse_args():
 
     p.add_argument("--tiff_dir", type=str, required=True,
                    help="Directory containing TIFF files")
-    p.add_argument("--xml", type=str, required=True,
-                   help="Path to Experiment.xml")
+
 
     p.add_argument("--output_dir", type=str, default=None,
                    help="Optional output directory (default: sibling of tiff_dir)")
@@ -70,12 +69,9 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     tiff_dir = Path(args.tiff_dir).resolve()
-    xml_path = Path(args.xml).resolve()
 
     if not tiff_dir.exists():
         sys.exit(f"TIFF directory not found: {tiff_dir}")
-    if not xml_path.exists():
-        sys.exit(f"Experiment.xml not found: {xml_path}")
     dataset_name = tiff_dir.name
     # Default output logic
     if args.output_dir:
@@ -86,12 +82,11 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"TIFF dir   : {tiff_dir}")
-    logger.info(f"XML        : {xml_path}")
     logger.info(f"Output dir : {output_dir}")
 
     start = time.time()
     try:
-        builder = ThorlabBuilder(str(tiff_dir), str(xml_path))
+        builder = ThorlabBuilder(str(tiff_dir))
         saved_files = builder.run_and_save(str(output_dir), save_raw=args.save_raw)
         status = "sucess"
     except Exception as e:
@@ -122,4 +117,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

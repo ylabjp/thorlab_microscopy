@@ -22,9 +22,9 @@ class ThorlabBuilder:
       saved = b.run_and_save(output_dir, save_raw=True)
     """
 
-    def __init__(self, tiff_dir: str, xml_path: str):
+    def __init__(self, tiff_dir: str):
         self.tiff_dir = Path(tiff_dir)
-        self.xml_path = Path(xml_path)
+        self.xml_path = self.tiff_dir.parent/"Experiment.xml"
 
         if not self.xml_path.exists():
             raise FileNotFoundError("Experiment.xml is required but not found.")
@@ -174,4 +174,3 @@ class ThorlabBuilder:
                 saved.append(str(raw_path))
 
         return saved
-
