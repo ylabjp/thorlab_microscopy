@@ -1,7 +1,7 @@
 # tests/test_gdrive_integration.py
 import pytest
 from pathlib import Path
-from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
+from thorlab_loader.bioio_thorlab_builder import ThorlabBioioBuilder
 
 
 @pytest.mark.gdrive_bioio
@@ -16,4 +16,3 @@ def test_gdrive_pipeline_bioio(gdrive_dataset, tmp_path):
     builder_bioio = ThorlabBioioBuilder(str(tiff_dir), str(xml_path), out_dir)
 
     assert out_dir.exists()
-

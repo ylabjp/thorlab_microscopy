@@ -1,5 +1,5 @@
 import pytest
-from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
+from thorlab_loader.bioio_thorlab_builder import ThorlabBioioBuilder
 
 
 @pytest.mark.integration_bioio
@@ -17,4 +17,3 @@ def test_full_pipeline_bioio(local_real_dataset):
     builder.build()
 
     assert True
-

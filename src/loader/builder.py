@@ -1,27 +1,19 @@
 from pathlib import Path
-from typing import Optional
+
 import json
 from datetime import datetime, UTC, timezone
-from bioio_base.types import PhysicalPixelSizes
 
 from ylabcommon.utils.file_selection import collect_valid_tiffs
-from ylabcommon.utils.outfile_name import build_output_name, extract_dimensions, build_stack_filename
+from ylabcommon.utils.outfile_name import extract_dimensions
 from ylabcommon.utils.summary_metadata_helper import get_enhanced_metadata, generate_file_sha256
 from ylabcommon.utils.utils import hybrid, style_print
-from ylabcommon.utils.report_builder import ReportBuilder
-
-from ..xml_parser import ExperimentXMLParser
-
 from ylabcommon.bioio.core.bioio_reader import BioIOReader
 from ylabcommon.bioio.core.bioio_writer import BioIOWriter
-#from ylabcommon.bioio.bioio_metadata import BioIOMetadataExtractor
-
 from ylabcommon.bioio.thorlab.thorlab_metadata_extractor import ThorlabMetadataExtractor
 from ylabcommon.bioio.thorlab.thorlab_params_adapter import ThorlabParamsAdapter
 from ylabcommon.bioio.thorlab.thorlab_bioio_stack_builder import stack_thorlab_with_bioio_calibrated, get_channel_names_index
 
-
-
+from .xml_parser import ExperimentXMLParser
 
 class ThorlabBioioBuilder:
     """
@@ -34,8 +26,6 @@ class ThorlabBioioBuilder:
     def __init__(
         self,
         tiff_dir: Path,
-        xml_file: Optional[Path],
-        output_dir: Path,
         *,
         compression: str = "zlib",
         compression_level: int = 6,
@@ -44,15 +34,15 @@ class ThorlabBioioBuilder:
     ):
 
         self.tiff_dir = Path(tiff_dir)
-        self.xml_file = Path(xml_file) if xml_file else None
-        self.output_dir = Path(output_dir)
+        self.xml_file = self.tiff_dir/"Experiment.xml"
         self.dry_run = dry_run
 
         self.compression = compression
         self.compression_level = compression_level
         self.validate_metadata = validate_metadata
 
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.stacked_data=None
+        self.image_meta=None
 
     # -------------------------------------------------
     # TIFF DISCOVERY + STACK
@@ -226,9 +216,9 @@ class ThorlabBioioBuilder:
 
     # -------------------------------------------------
     # WRITE OUTPUT
-    # -------------------------------------------------
-
-    def _write(self, data, image_meta, output_path):
+    # ---------------------------------------   ----------
+    
+    def write(self,output_path:Path):
 
         print("[Builder] Writing OME output...")
 
@@ -239,11 +229,11 @@ class ThorlabBioioBuilder:
         )
 
         writer.write(
-            data,
-            dim_order=image_meta.dim_order,
+            self.stacked_data,
+            dim_order=self.image_meta.dim_order,
             channel_names=None,
             #physical_pixel_sizes=phys_sizes,
-            physical_pixel_sizes=image_meta.pixel_size,
+            physical_pixel_sizes=self.image_meta.pixel_size,
         )
     # -------------------------------------------------
     # Validation report
@@ -299,17 +289,8 @@ class ThorlabBioioBuilder:
 
         report = self._validate_thorlab_stack(xml_meta, image_meta)
         
-        Z_stack_val = data.shape[2]
-        T_stack_val = data.shape[0]
-        #output_path = build_output_name(self.output_dir, tiff_files, Z_stack_val, T_stack_val)
-
         image_name, dims = extract_dimensions(tiff_files)
-        z_mx_min_re = [1,1,"None"] #Dummmy in case of Thorlab
-        output_filename = build_stack_filename(self.output_dir, image_name, dims, z_mx_min_re)
-
-        print(output_filename)
-
-
+        
         if self.dry_run:
             style_print("[DRY RUN ENABLED]", "info")
             print("[Validating] TIFF discovery successful")
@@ -322,67 +303,61 @@ class ThorlabBioioBuilder:
             print(f"Input TIFF count : {len(tiff_files)}")
             print(f"Stack shape      : {data.shape}")
             print(f"Pixel size (µm)  : {image_meta.pixel_size}")
-            print(f"Output name      : {output_path.name}.ome.tif")
+
             print("\nDry run completed successfully.\n")
             return
 
-        if self.validate_metadata:
-            style_print("Skipping Validation Run time set args.no_validate", "info")
-            self._write(stacked_data, image_meta, output_filename)
-        else:
-            if report["status"] == "VALIDATED":
-                self._write(stacked_data, image_meta, output_filename)
-    
+        self.stacked_data=stacked_data
+        self.image_meta=image_meta
 
         #===============================================================
         #Write summary report 
         #===============================================================
 
-        summary_report = ReportBuilder()
+        # summary_report = ReportBuilder()
 
-        # dataset information
-        summary_report.collect_dataset(
-            str(self.tiff_dir),
-            "Thorlab",
-            len(tiff_files)
-        )
+        # # dataset information
+        # summary_report.collect_dataset(
+        #     str(self.tiff_dir),
+        #     "Thorlab",
+        #     len(tiff_files)
+        # )
 
-        # experiment XML
-        summary_report.add_section(
-            "experiment_files",
-            {
-                "experiment_xml": str(self.xml_file)
-             }
-        )
+        # # experiment XML
+        # summary_report.add_section(
+        #     "experiment_files",
+        #     {
+        #         "experiment_xml": str(self.xml_file)
+        #      }
+        # )
 
-        # hybrid channel names
-        summary_report.add_section(
-            "thorlab_channels",
-            {
-                 "Channel_name_hybrid_index_str": hybrid_channel_name
-            }
-        )
+        # # hybrid channel names
+        # summary_report.add_section(
+        #     "thorlab_channels",
+        #     {
+        #          "Channel_name_hybrid_index_str": hybrid_channel_name
+        #     }
+        # )
 
-        # metadata from stacked TIFF
-        summary_report.add_section(
-            "image_metadata",
-            image_meta
-        )
+        # # metadata from stacked TIFF
+        # summary_report.add_section(
+        #     "image_metadata",
+        #     image_meta
+        # )
 
-        # dimensions detected from filenames
-        summary_report.set_dimensions(dims)
+        # # dimensions detected from filenames
+        # summary_report.set_dimensions(dims)
 
-        # stack metadata (shape, dtype, pixel sizes etc.)
-        summary_report.collect_metadata(image_meta, stacked_data)
+        # # stack metadata (shape, dtype, pixel sizes etc.)
+        # summary_report.collect_metadata(image_meta, stacked_data)
 
-        # output information
-        summary_report.set_output(self.output_dir, output_filename)
+        # # output information
+        # summary_report.set_output(self.output_dir, output_filename)
 
-        # validation
-        summary_report.finalize_validation()
+        # # validation
+        # summary_report.finalize_validation()
 
-        # write report
-        summary_report.write(self.output_dir, output_filename)
+        # # write report
+        # summary_report.write(self.output_dir, output_filename)
 
         print("[Builder] DONE.")
-

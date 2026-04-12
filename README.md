@@ -222,7 +222,6 @@ output_HA_488_XYT/
 |Option         |Description                            |
 |-------------- |---------------------------------------|
 |--tiff\_dir    | Local TIFF directory                  | 
-|--xml          | Experiment.xml (local mode)           |
 |--drive\_folder|	Google Drive folder URL               |
 |--auth\_mode	  | service\_account or oauth             |
 |--work\_dir	  | Temp download & extraction directory   |
@@ -539,7 +538,6 @@ Output_-.validation.json
 
 uv run python run_bioio_process_experiment.py \
 --tiff-dir < Like: InFileThorlab/beada_001 > \
---xml < Like: /InFileThorlab/beada_001/Experiment.xml> \
 --base_path <Like: beada_001> \
 --output-dir <Like: dirX > 
 --diff_outdirpath < Build Output path > 

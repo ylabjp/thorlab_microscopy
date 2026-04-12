@@ -109,4 +109,3 @@ class ExperimentXMLParser:
             return float(value)
         except:
             return None
-
