@@ -13,7 +13,7 @@ uv run python bioio_run_process_experiment.py \
 from pathlib import Path
 import argparse
 
-from thorlab_loader.bioio_thorlab_builder import ThorlabBioioBuilder
+from loader.builder import ThorlabBioioBuilder
 from ylabcommon.utils.utils import get_theme, style_print
 
 
@@ -90,13 +90,13 @@ def main() -> None:
 
     builder = ThorlabBioioBuilder(
         tiff_dir=args.tiff_dir,
-        output_fname=output_fname,
         compression=args.compression,
         compression_level=args.compression_level,
         dry_run=args.dry_run,
     )
 
     builder.build()
+    builder.write(output_fname)
 
     print("=============================================================================")
     style_print("[Builder] DONE. Processing completed successfully : success")

@@ -25,7 +25,7 @@ dependencies = [
     "ome-types",
     "xarray",
     "dask[array]",
-    "ylabcommon@ git+https://github.com/ylabjp/ylab-common-scripts",
+    "ylabcommon @ git+https://github.com/ylabjp/ylab-common-scripts",
     "bioio-ome-zarr>=1.2.0",
 ]
 
@@ -40,7 +40,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
-packages = ["thorlab_loader"]
+packages = ["loader"]
 
 [dependency-groups]
 dev = [
