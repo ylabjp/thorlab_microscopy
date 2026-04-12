@@ -12,16 +12,11 @@ uv run python bioio_run_process_experiment.py \
 
 from pathlib import Path
 import argparse
-import shutil
 
-from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
+from thorlab_loader.bioio_thorlab_builder import ThorlabBioioBuilder
 from ylabcommon.utils.utils import get_theme, style_print
-from ylabcommon.utils.output_build_dir import build_output_dir_name
-from ylabcommon.utils.infile_experiment_loader import extract_zip_and_find_tiffs
 
-##Before used
-#from thorlab_loader.backends.bioio_thorlab_builder import ThorlabBioioBuilder
-#from thorlab_loader.utils import get_theme, style_print
+
 
 # =============================================================================
 # Argument Parser
